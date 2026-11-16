@@ -1,0 +1,8 @@
+services:
+  web:
+    build: .
+    image: rizka-dental:latest
+    container_name: rizka-dental
+    restart: unless-stopped
+    ports:
+      - "8080:80"

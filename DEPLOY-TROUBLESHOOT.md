@@ -169,3 +169,132 @@ Dockerfile kita karena tidak ada `RUN` yang mengunduh sesuatu.
 Belum diuji: Docker daemon di mesin saya tidak berjalan, jadi build image belum dijalankan
 secara lokal. Klaim tentang Dokploy dan Nixpacks berasal dari source code dan dokumentasi
 resmi masing-masing, bukan dari server Anda.
+
+---
+
+## 7. Nuxt SSG deploy di Dokploy
+
+Repo punya dua app: `index.html` statis (arsip: `Dockerfile.html-backup`,
+`docker-compose.html-backup.yml`) dan versi Nuxt di `nuxt-app/` (static generate,
+`nitro.preset = 'static'`). `Dockerfile` + `docker-compose.yml` di root sekarang
+mengarah ke versi **Nuxt**. Bagian 0-6 di atas masih berlaku untuk DNS host dan isian UI Dokploy.
+
+### 7.1 Flow build 2-stage
+
+```text
+repo root (context ".")
+ ├─ Stage 1 builder  node:20-alpine
+ │    COPY nuxt-app/package*.json  -> npm ci
+ │    COPY nuxt-app/ .             -> npm run generate   => /app/.output/public
+ └─ Stage 2 runtime  nginx:alpine
+      COPY nginx.conf              -> /etc/nginx/conf.d/default.conf
+      COPY --from=builder /app/.output/public -> /usr/share/nginx/html
+      EXPOSE 80, CMD nginx -g "daemon off;"
+```
+
+Image akhir hanya berisi nginx + file statis. Node dan `node_modules` tidak ikut.
+`.dockerignore` membuang `node_modules`, `.output`, `.nuxt` (root dan `nuxt-app/`) supaya
+build lokal yang basi tidak menimpa hasil build di container.
+
+### 7.2 Port mapping
+
+| Lokasi | Port | Catatan |
+|--------|------|---------|
+| Container (nginx) | 80 | `EXPOSE 80`, `listen 80` di `nginx.conf` |
+| Compose lokal | `80:80` | akses `http://localhost/` |
+| Dokploy + Traefik | 80 (internal) | Traefik mengakses lewat `loadbalancer.server.port=80` |
+
+Di Dokploy, kalau port host 80 sudah dipakai Traefik, `ports: "80:80"` akan bentrok
+(`port is already allocated`). Hapus blok `ports` untuk deploy lewat Traefik (pakai
+`expose: ["80"]`), atau ganti `8080:80` untuk tes lokal.
+
+### 7.3 Traefik labels (docker-compose.yml)
+
+```yaml
+labels:
+  - "traefik.enable=true"
+  - "traefik.http.routers.rizka-dental.rule=Host(`${DOMAIN:-rizka.example.com}`)"
+  - "traefik.http.routers.rizka-dental.entrypoints=web"
+  - "traefik.http.services.rizka-dental.loadbalancer.server.port=80"
+```
+
+- Set env `DOMAIN` di Dokploy (tab Environment) ke domain asli.
+- HTTPS: uncomment 3 baris `-secure` di compose (entrypoint `websecure`, certresolver
+  `letsencrypt`). Nama certresolver harus sama dengan yang ada di Traefik Dokploy
+  (cek `/etc/dokploy/traefik/traefik.yml`). Cara paling sedikit risikonya: pakai tab
+  **Domains** Dokploy (HTTPS on, Let's Encrypt) dan buang label manual.
+- Router dan service Traefik harus unik per app. Ganti `rizka-dental` kalau ada app lain.
+- Container harus ada di network yang sama dengan Traefik (`dokploy-network`). Mode Compose
+  Dokploy menambahkannya otomatis. Kalau 502/504, cek network ini dulu.
+
+### 7.4 Isian Dokploy
+
+- **Application**: Build Type = Dockerfile, Dockerfile Path = `Dockerfile`, Docker Context
+  Path = `.`, Container Port = 80.
+- **Compose**: Compose Path `docker-compose.yml`, service `web`.
+
+### 7.5 Env vars
+
+Build ini static, tidak ada server Node saat runtime, jadi tidak ada env var wajib.
+`NUXT_PUBLIC_*` harus tersedia **saat build** (ARG di builder atau Build Args Dokploy),
+bukan saat runtime, karena sudah jadi file statis.
+
+### 7.6 Troubleshoot error umum
+
+**a. `COPY --from=builder /app/.output/public` gagal: `not found` / missing `.output`**
+
+- Penyebab: `npm run generate` tidak menghasilkan `.output/public`, atau path salah.
+- Cek: `nuxt-app/nuxt.config.ts` harus `nitro.preset: 'static'` dan script `generate` ada
+  di `package.json`. Output Nuxt 3/4 selalu `.output/public`.
+- Cek log tahap builder (`npm run generate`). Error di tahap itu biasanya jadi akar masalah,
+  dan pesan COPY hanya gejala.
+- `npm ci` gagal `package-lock.json not found` / out of sync: commit `nuxt-app/package-lock.json`
+  yang cocok dengan `package.json`.
+- Jangan COPY `.output` dari host. `.dockerignore` sengaja membuangnya.
+- Build kehabisan memori (exit 137, `Killed`): naikkan RAM/swap host.
+- Tes lokal: `docker build --target builder -t t . && docker run --rm t ls .output/public`.
+
+**b. Nginx 404 / SPA fallback tidak jalan**
+
+- Gejala: buka `/` normal, refresh di `/path` 404.
+- Cek `nginx.conf` ikut ter-copy: `docker exec <c> cat /etc/nginx/conf.d/default.conf`
+  harus berisi `try_files $uri $uri/ /index.html;`.
+- Kalau isinya default nginx, `COPY nginx.conf` hilang atau `nginx.conf` kena `.dockerignore`.
+- Tes config: `docker exec <c> nginx -t`.
+- Halaman kosong tapi 200: `/usr/share/nginx/html` kosong. `docker exec <c> ls /usr/share/nginx/html`.
+- 404 untuk `/_nuxt/*.js`: itu tanda asset hash lama dicari browser yang masih cache HTML lama.
+  `location /_nuxt/` sengaja `=404` supaya tidak diganti `index.html`. Hard refresh, dan
+  pastikan `index.html` tidak di-cache (lihat c).
+- Nuxt `generate` membuat `/path/index.html` per route, jadi `$uri/` sudah cukup untuk
+  route yang di-prerender. Fallback `/index.html` untuk route yang tidak di-prerender.
+
+**c. Cache busting**
+
+- `/_nuxt/*`: nama file berisi hash konten, di-set `Cache-Control: public, immutable` 1 tahun.
+  Aman karena build baru = nama file baru.
+- `index.html`: `no-cache` supaya browser selalu revalidate dan mengambil referensi hash terbaru.
+- Cek: `curl -sI http://localhost/_nuxt/<file>.js | grep -i cache-control` dan
+  `curl -sI http://localhost/ | grep -i cache-control`.
+- Kalau user masih lihat versi lama: cek CDN/Cloudflare (purge), dan pastikan Dokploy
+  benar-benar rebuild (Deploy, bukan Restart). Restart memakai image lama.
+- Asset di `public/` (bukan `_nuxt`) tidak di-hash. Kalau diubah dengan nama sama, ganti
+  nama file atau tambah query `?v=`.
+
+**d. Lain-lain**
+
+- `port is already allocated` di 80: lihat 7.2.
+- 502/504 dari Traefik: container belum healthy, network salah, atau port label bukan 80.
+  `docker ps` harus menunjukkan `healthy`. Healthcheck memakai `wget --spider http://localhost/`;
+  di `nginx:alpine` `wget` (busybox) tersedia.
+- Router tidak ketemu (404 dari Traefik): `Host(...)` tidak sama dengan domain, atau `DOMAIN` belum di-set.
+- Pull image timeout (`node:20-alpine` / `nginx:alpine`): masalah DNS host, lihat bagian 5.
+
+### 7.7 Checklist cepat
+
+1. DNS host beres (bagian 5). Build butuh pull `node:20-alpine` dan `nginx:alpine`.
+2. `nuxt-app/package-lock.json` ter-commit.
+3. Set `DOMAIN` di Dokploy. Putuskan pakai `ports` atau tidak (lihat 7.2).
+4. Deploy, cek log tahap `npm run generate`.
+5. `curl -I https://domain-anda/` mengembalikan `200`.
+
+Belum diuji: `docker build` belum dijalankan untuk konfigurasi ini (menunggu `nuxt-app/` siap).

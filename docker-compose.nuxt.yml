@@ -1,0 +1,11 @@
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.nuxt
+    restart: unless-stopped
+    expose:
+      - "80"
+    # ponytail: no host port / container_name — Dokploy's Traefik reaches the
+    # container over its internal network and assigns the domain via the UI.
+    # add `ports: ["8080:80"]` back for local-only testing outside Dokploy.
