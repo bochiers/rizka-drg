@@ -1,17 +1,22 @@
-# Nuxt SSG (nuxt generate) -> static nginx. Build context = repo root.
+# Nuxt SSG (nuxt generate) -> static-web-server. Build context = repo root.
+# Traefik (dari Dokploy) handle routing + TLS, jadi runtime cuma serve static files.
 # Versi HTML statis lama diarsipkan di Dockerfile.html-backup.
 
 # ---- Stage 1: builder ----
-FROM node:20-alpine AS builder
+FROM node:22-alpine AS builder
 WORKDIR /app
 COPY nuxt-app/package*.json ./
 RUN npm ci
 COPY nuxt-app/ .
 RUN npm run generate
 
-# ---- Stage 2: runtime ----
-FROM nginx:alpine
-COPY nginx.conf /etc/nginx/conf.d/default.conf
-COPY --from=builder /app/.output/public /usr/share/nginx/html
+# ---- Stage 2: runtime (static-web-server, ~5MB) ----
+FROM joseluisq/static-web-server:2-alpine
+ENV SERVER_PORT=80
+ENV SERVER_ROOT=/public
+ENV SERVER_FALLBACK_PAGE=/public/index.html
+ENV SERVER_COMPRESSION=true
+ENV SERVER_DIRECTORY_LISTING=false
+ENV SERVER_LOG_LEVEL=info
+COPY --from=builder /app/.output/public /public
 EXPOSE 80
-CMD ["nginx", "-g", "daemon off;"]
