@@ -1,0 +1,10 @@
+.backup/
+.git/
+.gitignore
+.DS_Store
+README.md
+DESIGN.md
+Dockerfile
+.dockerignore
+node_modules/
+*.log
