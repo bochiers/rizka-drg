@@ -12,6 +12,7 @@ RUN npm run generate
 
 # ---- Stage 2: runtime (static-web-server, ~5MB) ----
 FROM joseluisq/static-web-server:2-alpine
+ENV SERVER_HOST=0.0.0.0
 ENV SERVER_PORT=80
 ENV SERVER_ROOT=/public
 ENV SERVER_FALLBACK_PAGE=/public/index.html
