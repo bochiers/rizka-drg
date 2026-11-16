@@ -1,6 +1,6 @@
 # 🦷 Rizka Dental Care — Landing Page
 
-Landing page company profile untuk **Rizka Dental Care**, klinik gigi keluarga di Jakarta Selatan yang dipimpin **drg. Rizka Radihas Putri**. Situs satu halaman ini memperkenalkan dokter, layanan (scaling, whitening, veneer, behel, implan, perawatan anak), hasil before/after, dan testimoni pasien, lalu mengarahkan pengunjung ke form janji temu. Dibangun sebagai static site murni dengan sentuhan parallax yang halus, tanpa framework dan tanpa build step, lalu dikemas dalam container Nginx untuk deployment.
+Landing page company profile untuk **Rizka Dental Care**, klinik gigi keluarga di Jakarta Selatan yang dipimpin **drg. Rizka Radihas Putri**. Situs satu halaman ini memperkenalkan dokter, layanan (scaling, whitening, veneer, behel, implan, perawatan anak), hasil before/after, dan testimoni pasien, lalu mengarahkan pengunjung ke form janji temu. Dibangun sebagai static site murni dengan sentuhan parallax yang halus, tanpa framework dan tanpa build step, lalu dikemas dalam container `static-web-server` (Rust) untuk deployment.
 
 ---
 
@@ -23,7 +23,7 @@ Landing page company profile untuk **Rizka Dental Care**, klinik gigi keluarga d
 - **Parallax engine:** scroll + mouse + lerp + reverse layer, menghormati `prefers-reduced-motion`
 - **IntersectionObserver** untuk scroll reveal
 - **OpenStreetMap iframe** untuk map embed
-- **Nginx (alpine)** sebagai production server dalam container
+- **static-web-server** (Rust binary, alpine image ~15 MB) sebagai production server dalam container — gzip, security headers, `/health` endpoint, cache-control otomatis
 
 ---
 
@@ -48,9 +48,8 @@ Landing page company profile untuk **Rizka Dental Care**, klinik gigi keluarga d
 rizka-compro/
 ├── index.html          # Seluruh halaman: markup, style, dan script
 ├── DESIGN.md           # Spesifikasi desain (brand, palet, copy, parallax)
-├── Dockerfile          # Image nginx:1.27-alpine untuk production
+├── Dockerfile          # Image static-web-server:2-alpine untuk production
 ├── .dockerignore       # File yang tidak ikut masuk build context
-├── nginx.conf          # Konfigurasi Nginx (gzip, cache, security headers, /healthz)
 ├── docker-compose.yml  # Opsional: menjalankan container lewat compose
 └── README.md           # Dokumen ini
 ```
@@ -94,7 +93,7 @@ Alternatif dengan Docker Compose:
 docker compose up --build
 ```
 
-> Image saat ini hanya menyalin `index.html` dan `nginx.conf`. Jika Anda menambahkan folder aset lokal (misalnya `images/`), tambahkan baris `COPY` yang sesuai di `Dockerfile`, dan pastikan folder tersebut tidak masuk `.dockerignore`.
+> Image saat ini hanya menyalin `index.html` ke `/public`. Jika Anda menambahkan folder aset lokal (misalnya `images/`), tambahkan baris `COPY` yang sesuai di `Dockerfile`, dan pastikan folder tersebut tidak masuk `.dockerignore`. Konfigurasi server (compression, security headers, `/health`) diatur lewat environment variable di `Dockerfile`, bukan file config terpisah.
 
 ---
 
