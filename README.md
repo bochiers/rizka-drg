@@ -1,6 +1,6 @@
 # 🦷 Rizka Dental Care — Landing Page
 
-Landing page company profile untuk **Rizka Dental Care**, klinik gigi keluarga di Jakarta Selatan yang dipimpin **drg. Rizka Radihas Putri, Sp.KG**. Situs satu halaman ini memperkenalkan dokter, layanan (scaling, whitening, veneer, behel, implan, perawatan anak), hasil before/after, dan testimoni pasien, lalu mengarahkan pengunjung ke form janji temu. Dibangun sebagai static site murni dengan sentuhan parallax yang halus, tanpa framework dan tanpa build step, lalu dikemas dalam container Nginx untuk deployment.
+Landing page company profile untuk **Rizka Dental Care**, klinik gigi keluarga di Jakarta Selatan yang dipimpin **drg. Rizka Radihas Putri**. Situs satu halaman ini memperkenalkan dokter, layanan (scaling, whitening, veneer, behel, implan, perawatan anak), hasil before/after, dan testimoni pasien, lalu mengarahkan pengunjung ke form janji temu. Dibangun sebagai static site murni dengan sentuhan parallax yang halus, tanpa framework dan tanpa build step, lalu dikemas dalam container Nginx untuk deployment.
 
 ---
 

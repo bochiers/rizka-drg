@@ -71,8 +71,8 @@ Rationale urutan: Hero tarik perhatian → About bangun kredibilitas dokter → 
 ### About Doctor
 - **Eyebrow:** "Kenali Dokter Kami"
 - **Headline:** "Perawatan dari Tangan yang Tepat"
-- **Body:** "drg. Rizka Radihas Putri, Sp.KG hadir dengan lebih dari 10 tahun pengalaman menangani perawatan gigi untuk seluruh keluarga. Dengan pendekatan yang hangat dan teknologi terkini, setiap pasien mendapat perhatian dan perawatan terbaik sesuai kebutuhannya."
-- **Credentials tags:** "Lulusan FKG Universitas Indonesia", "Spesialis Konservasi Gigi", "10+ Tahun Pengalaman", "500+ Pasien Puas"
+- **Body:** "drg. Rizka Radihas Putri hadir dengan lebih dari 10 tahun pengalaman menangani perawatan gigi untuk seluruh keluarga. Dengan pendekatan yang hangat dan teknologi terkini, setiap pasien mendapat perhatian dan perawatan terbaik sesuai kebutuhannya."
+- **Credentials tags:** "Lulusan FKG Universitas Indonesia", "STR Aktif", "10+ Tahun Pengalaman", "500+ Pasien Puas"
 
 ### Services (6)
 
