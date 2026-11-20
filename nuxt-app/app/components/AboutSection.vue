@@ -38,12 +38,12 @@
         <div class="relative mx-auto max-w-sm">
           <div class="absolute -inset-4 bg-gradient-to-br from-primary-light/40 to-accent/30 rounded-xl blur-2xl" aria-hidden="true"></div>
           <NuxtImg
-            src="https://images.unsplash.com/photo-1594824476967-48c8b964273f?w=800&q=80"
+            src="/drg-rizka.webp"
             alt="Potret drg. Rizka Radihas Putri"
-            class="relative rounded-xl shadow-soft w-full object-cover aspect-[4/5]"
+            class="relative rounded-xl shadow-soft w-full object-cover object-top aspect-[4/5]"
             loading="lazy"
-            width="800"
-            height="1000"
+            width="1000"
+            height="1250"
           />
           <div class="absolute -bottom-6 -left-6 bg-white rounded-lg shadow-soft p-4 flex items-center gap-3">
             <div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary-dark" aria-hidden="true">
